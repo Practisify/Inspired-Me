@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspire Me - Quote Generator</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #fff;
+      text-align: center;
+      position: relative;
+      transition: background-image 1s ease-in-out;
+      animation: zoom 20s infinite alternate ease-in-out;
+      background-image: url('https://source.unsplash.com/1600x900/?inspiration,motivation'); /* Default fallback image */
+    }
+
+    @keyframes zoom {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 0;
+    }
+
+    #quote-box {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(8px);
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    #quote {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #author {
+      font-size: 1rem;
+      color: #ddd;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+
+    button {
+      padding: 0.7rem 1.2rem;
+      font-size: 1rem;
+      background: #ff6f61;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.5s ease;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      background: #ff5347;
+    }
+
+    .copied {
+      color: #90ee90;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    .category-tag {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="quote-box">
+    <h1>Need Some Inspiration?</h1>
+    <div id="quote"></div>
+    <div id="author"></div>
+    <button onclick="generateQuote()">Inspire Me ✨</button>
+    <div class="copied" id="copied-msg">Quote copied!</div>
+  </div>
+
+  <script>
+    // Default fallback image in case others don't load
+    const DEFAULT_IMAGE = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTHeLUW3cRvmD_CtDm7Ca JS7pUfv1hH2RLVZA&s';
+
+    // Quotes database
+    const quotes = [
+      {
+        quote: "Believe you can and you're halfway there.",
+        author: "Theodore Roosevelt",
+        category: "motivational",
+        image: "https://source.unsplash.com/1600x900/?motivation,mountain"
+      },
+      {
+        quote: "The future belongs to those who believe in the beauty of their dreams.",
+        author: "Eleanor Roosevelt",
+        category: "motivational",
+        image: "https://source.unsplash.com/1600x900/?dream,sky"
+      },
+      {
+        quote: "It always seems impossible until it's done.",
+        author: "Nelson Mandela",
+        category: "motivational",
+        image: "https://source.unsplash.com/1600x900/?success,achievement"
+      },
+      {
+        quote: "Don't watch the clock; do what it does. Keep going.",
+        author: "Sam Levenson",
+        category: "motivational",
+        image: "https://source.unsplash.com/1600x900/?time,clock"
+      },
+      {
+        quote: "The only way to do great work is to love what you do.",
+        author: "Steve Jobs",
+        category: "motivational",
+        image: "https://source.unsplash.com/1600x900/?work,passion"
+      },
+      {
+        quote: "Life is what happens when you're busy making other plans.",
+        author: "John Lennon",
+        category: "life",
+        image: "https://source.unsplash.com/1600x900/?life,random"
+      },
+      {
+        quote: "In three words I can sum up everything I've learned about life: it goes on.",
+        author: "Robert Frost",
+        category: "life",
+        image: "https://source.unsplash.com/1600x900/?nature,forest"
+      },
+      {
+        quote: "Life is either a daring adventure or nothing at all.",
+        author: "Helen Keller",
+        category: "life",
+        image: "https://source.unsplash.com/1600x900/?adventure,travel"
+      },
+      {
+        quote: "You only live once, but if you do it right, once is enough.",
+        author: "Mae West",
+        category: "life",
+        image: "https://source.unsplash.com/1600x900/?live,enjoy"
+      },
+      {
+        quote: "The purpose of our lives is to be happy.",
+        author: "Dalai Lama",
+        category: "life",
+        image: "https://source.unsplash.com/1600x900/?happiness,smile"
+      },
+      // Add more quotes as needed...
+    ];
+
+    // Function to check if image loads successfully
+    function checkImage(url, callback) {
+      const img = new Image();
+      img.onload = function() {
+        callback(true);
+      };
+      img.onerror = function() {
+        callback(false);
+      };
+      img.src = url;
+    }
+
+    // Function to generate a random quote
+    function generateQuote() {
+      const randomIndex = Math.floor(Math.random() * quotes.length);
+      const { quote, author, image, category } = quotes[randomIndex];
+
+      const quoteEl = document.getElementById("quote");
+      const authorEl = document.getElementById("author");
+      const copiedMsg = document.getElementById("copied-msg");
+
+      // Check if the image exists before using it
+      checkImage(image, function(isValid) {
+        const bgImage = isValid ? image : DEFAULT_IMAGE;
+        
+        // Reset animation for smooth transition
+        document.body.style.animation = 'none';
+        void document.body.offsetWidth; // Trigger reflow
+        document.body.style.animation = 'zoom 19s infinite alternate ease-in-out';
+
+        // Change background image
+        document.body.style.backgroundImage = `url('${bgImage}')`;
+      });
+
+      // Fade out current quote
+      quoteEl.style.opacity = 0;
+      authorEl.style.opacity = 0;
+      copiedMsg.style.display = 'none';
+
+      // After fade out, change content and fade in
+      setTimeout(() => {
+        quoteEl.innerHTML = `"${quote}"`;
+        authorEl.innerHTML = `— ${author}`;
+        
+        // Add category tag if it doesn't exist
+        let categoryTag = document.querySelector('.category-tag');
+        if (!categoryTag) {
+          categoryTag = document.createElement('div');
+          categoryTag.className = 'category-tag';
+          document.getElementById('quote-box').appendChild(categoryTag);
+        }
+        categoryTag.textContent = category;
+        
+        // Fade in new content
+        quoteEl.style.opacity = 1;
+        authorEl.style.opacity = 1;
+
+        // Add click to copy functionality
+        quoteEl.onclick = () => {
+          navigator.clipboard.writeText(`${quote} — ${author}`);
+          copiedMsg.style.display = 'block';
+          setTimeout(() => {
+            copiedMsg.style.display = 'none';
+          }, 2000);
+        };
+      }, 300);
+    }
+
+    // Initialize on page load
+    window.onload = function() {
+      generateQuote();
+      
+      // Auto-generate new quote every 20 seconds
+      setInterval(generateQuote, 20000);
+    };
+  </script>
+</body>
+</html>
